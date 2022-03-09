@@ -1,0 +1,280 @@
+
+// initializes encoder count for each motor
+volatile long int U_encoder_pos = 0;   
+volatile long int F_encoder_pos = 0;
+volatile long int B_encoder_pos = 0;
+volatile long int R_encoder_pos = 0;
+volatile long int L_encoder_pos = 0;
+
+
+// initializes degree that motors are on
+int U_degrees = 0;
+int F_degrees = 0;
+int B_degrees = 0;
+int R_degrees = 0;
+int L_degrees = 0;
+
+
+// sets power motor receives for rotating
+int motor_power = 255;
+
+
+// Defines pins the cables are connected to
+/* UP FACE */
+int motor_pin_U1 = 22;
+int motor_pin_U2 = 23;
+int encod_pin_U1 = 0;
+int encod_pin_U2 = 1;
+
+int motor_pin_F1 = 18;
+int motor_pin_F2 = 19;
+int encod_pin_F1 = 2;
+int encod_pin_F2 = 3;
+
+int motor_pin_B1 = 14;
+int motor_pin_B2 = 15;
+int encod_pin_B1 = 4;
+int encod_pin_B2 = 5;
+
+int motor_pin_R1 = 12;
+int motor_pin_R2 = 13;
+int encod_pin_R1 = 6;
+int encod_pin_R2 = 7;
+
+int motor_pin_L1 = 10;
+int motor_pin_L2 = 11;
+int encod_pin_L1 = 8;
+int encod_pin_L2 = 9;
+
+
+
+void setup() {
+
+  // defining input pins for encoder
+  pinMode(encod_pin_U1, INPUT);      
+  pinMode(encod_pin_U2, INPUT);     
+  pinMode(encod_pin_F1, INPUT);
+  pinMode(encod_pin_F2, INPUT);
+  pinMode(encod_pin_B1, INPUT);
+  pinMode(encod_pin_B2, INPUT);
+  pinMode(encod_pin_R1, INPUT);
+  pinMode(encod_pin_R2, INPUT);
+  pinMode(encod_pin_L1, INPUT);
+  pinMode(encod_pin_L2, INPUT);
+
+
+  // attaching interrupt for encoders
+  attachInterrupt(digitalPinToInterrupt(encod_pin_U1), encoder_U, RISING);
+  attachInterrupt(digitalPinToInterrupt(encod_pin_F1), encoder_F, RISING);
+  attachInterrupt(digitalPinToInterrupt(encod_pin_B1), encoder_B, RISING);
+  attachInterrupt(digitalPinToInterrupt(encod_pin_R1), encoder_R, RISING);
+  attachInterrupt(digitalPinToInterrupt(encod_pin_L1), encoder_L, RISING);
+
+
+  // defining output pins for motors
+  pinMode(motor_pin_U1, OUTPUT);
+  pinMode(motor_pin_U2, OUTPUT);
+  pinMode(motor_pin_F1, OUTPUT);
+  pinMode(motor_pin_F2, OUTPUT);
+  pinMode(motor_pin_B1, OUTPUT);
+  pinMode(motor_pin_B2, OUTPUT);
+  pinMode(motor_pin_R1, OUTPUT);
+  pinMode(motor_pin_R2, OUTPUT);
+  pinMode(motor_pin_L1, OUTPUT);
+  pinMode(motor_pin_L2, OUTPUT);
+
+  
+  // initializing Serial
+  Serial.begin(9600);
+  Serial.print("Initializing serial \n");
+  
+}
+
+
+
+
+
+void loop() {
+
+  // read user input sent via Serial and commands the cube to rotate the specified face
+  if(Serial.available()){
+    String all_commands = Serial.readStringUntil('\n');
+    String commands_list[30];
+    int string_count = 0; 
+
+
+    // splitting string of all commands into substrings of individual commands
+    while (all_commands.length() > 0) {
+      int index = all_commands.indexOf(' ');
+      
+      if (index == -1) {
+        commands_list[string_count++] = all_commands;
+        break;
+      } else {
+        commands_list[string_count++] = all_commands.substring(0, index);
+        all_commands = all_commands.substring(index+1);
+      }
+    }
+
+  
+    // executing individual commands
+    for (int i = 0; i < string_count; i++) {
+      Serial.print("Rotating ");
+      Serial.println(commands_list[i]);
+      rotate(commands_list[i]);
+      delay(2000);
+    }
+  }  
+}
+
+
+
+
+
+
+
+void encoder_U(){
+  if (digitalRead(encod_pin_U2) == HIGH){
+    U_encoder_pos++;
+  } else {
+    U_encoder_pos--;
+  }
+}
+
+
+void encoder_F(){
+  if (digitalRead(encod_pin_F2) == HIGH){
+    F_encoder_pos++;
+  } else {
+    F_encoder_pos--;
+  }
+}
+
+
+void encoder_B(){
+  if (digitalRead(encod_pin_B2) == HIGH){
+    B_encoder_pos++;
+  } else {
+    B_encoder_pos--;
+  }
+}
+
+
+void encoder_R(){
+  if (digitalRead(encod_pin_R2) == HIGH){
+    R_encoder_pos++;
+  } else {
+    R_encoder_pos--;
+  }
+}
+
+
+void encoder_L(){
+  if (digitalRead(encod_pin_L2) == HIGH){
+    L_encoder_pos++;
+  } else {
+    L_encoder_pos--;
+  }
+}
+
+
+
+
+
+void rotate(String movement) {
+
+  if (movement == "U")  {
+    int U_target = (U_degrees + 90) % 360;
+    MotorClockwise(motor_power, motor_pin_U1, motor_pin_U2);
+    while (U_degrees <= (U_target-1) or U_degrees >= (U_target+1)) {U_degrees = (U_encoder_pos / 8) % 360;}
+    MotorClockwise(0, motor_pin_U1, motor_pin_U2);
+    Serial.println(U_degrees);}
+
+  if (movement == "U'")  {
+    int U_target = (U_degrees - 90) % 360;
+    MotorCounterClockwise(motor_power, motor_pin_U1, motor_pin_U2);
+    while (U_degrees <= (U_target-1) or U_degrees >= (U_target+1)) {U_degrees = (U_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_U1, motor_pin_U2);}
+
+
+  if (movement == "F")  {
+    int F_target = (F_degrees + 90) % 360;
+    MotorClockwise(motor_power, motor_pin_F1, motor_pin_F2);
+    while (F_degrees <= (F_target-1) or F_degrees >= (F_target+1)) {F_degrees = (F_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_F1, motor_pin_F2);
+    Serial.println(F_degrees);}
+  
+  if (movement == "F'")  {
+    int F_target = (F_degrees - 90) % 360;
+    MotorCounterClockwise(motor_power, motor_pin_F1, motor_pin_F2);
+    while (F_degrees <= (F_target-1) or F_degrees >= (F_target+1)) {F_degrees = (F_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_F1, motor_pin_F2);}
+
+  
+  if (movement == "B")  {
+    int B_target = (B_degrees + 90) % 360;
+    MotorClockwise(motor_power, motor_pin_B1, motor_pin_B2);
+    while (B_degrees <= (B_target-1) or B_degrees >= (B_target+1)) {B_degrees = (B_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_B1, motor_pin_B2);
+    Serial.println(B_degrees);}
+    
+  if (movement == "B'")  {
+    int B_target = (B_degrees - 90) % 360;
+    MotorCounterClockwise(motor_power, motor_pin_B1, motor_pin_B2);
+    while (B_degrees <= (B_target-1) or B_degrees >= (B_target+1)) {B_degrees = (B_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_B1, motor_pin_B2);}
+
+
+  if (movement == "R")  {
+    int R_target = (R_degrees + 90) % 360;
+    MotorClockwise(motor_power, motor_pin_R1, motor_pin_R2);
+    while (R_degrees <= (R_target-1) or R_degrees >= (R_target+1)) {R_degrees = (R_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_R1, motor_pin_R2);
+    Serial.println(R_degrees);}
+    
+  if (movement == "R'")  {
+    int R_target = (R_degrees - 90) % 360;
+    MotorCounterClockwise(motor_power, motor_pin_R1, motor_pin_R2);
+    while (R_degrees <= (R_target-1) or R_degrees >= (R_target+1)) {R_degrees = (R_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_R1, motor_pin_R2);}
+
+  
+  if (movement == "L")  {
+    int L_target = (L_degrees + 90) % 360;
+    MotorClockwise(motor_power, motor_pin_L1, motor_pin_L2);
+    while (L_degrees <= (L_target-1) or L_degrees >= (L_target+1)) {L_degrees = (L_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_L1, motor_pin_L2);
+    Serial.println(L_degrees);}
+    
+  if (movement == "L'")  {
+    int L_target = (L_degrees - 90) % 360;
+    MotorCounterClockwise(motor_power, motor_pin_L1, motor_pin_L2);
+    while (L_degrees <= (L_target-1) or L_degrees >= (L_target+1)) {L_degrees = (L_encoder_pos /  8) % 360;}
+    MotorClockwise(0, motor_pin_L1, motor_pin_L2);}
+
+}
+
+
+
+
+void MotorClockwise(int power, int motor_pin1, int motor_pin2){
+  if (power > 100) {
+    digitalWrite(motor_pin1, power);
+    digitalWrite(motor_pin2, LOW);
+  } else {
+    digitalWrite(motor_pin1, LOW);
+    digitalWrite(motor_pin2, LOW);
+  }
+}
+
+
+
+void MotorCounterClockwise(int power, int motor_pin1, int motor_pin2){
+  if (power > 100) {
+    digitalWrite(motor_pin2, power);
+    digitalWrite(motor_pin1, LOW);
+  } else {
+    digitalWrite(motor_pin2, LOW);
+    digitalWrite(motor_pin1, LOW);
+  }
+}
